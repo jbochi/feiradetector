@@ -4,16 +4,24 @@ sys.path.insert(0, "/Library/Frameworks/GStreamer.framework/Versions/0.10/x86_64
 import glib, gobject
 import gst
 
+RMS_THRESHOLD = -10
+MP3_FILE = "file:///Users/juarez.bochi/dev/personal/feiradetector/res/feira_da_fruta.mp3"
+
+def play():
+    player = gst.parse_launch("playbin2 uri=%s" % MP3_FILE)
+    player.set_state(gst.STATE_PLAYING)
+    pipeline.set_state(gst.STATE_NULL)
+
 def on_feira_detected():
-	print 'feira'
-	#pipeline.set_state(gst.STATE_NULL)
+    print 'feira'
+    play()
 
 def callback(bus, message):
     if message.type == gst.MESSAGE_ELEMENT:
         if message.structure.get_name() == "level":
             rms = message.structure["rms"][0]
-            if rms > -10:
-            	on_feira_detected()
+            if rms > RMS_THRESHOLD:
+                on_feira_detected()
     elif message.type == gst.MESSAGE_ERROR:
         err, debug = message.parse_error()
         print "Error: %s" % err, debug
