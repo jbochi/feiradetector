@@ -1,14 +1,15 @@
+import os
 import sys
 sys.path.insert(0, "/Library/Frameworks/GStreamer.framework/Versions/0.10/x86_64/lib/python2.7/site-packages/gst-0.10")
 sys.path.insert(0, "/Library/Frameworks/GStreamer.framework/Versions/0.10/x86_64/lib/python2.7/site-packages")
 import glib, gobject
 import gst
 
-RMS_THRESHOLD = -10
-MP3_FILE = "file:///Users/juarez.bochi/dev/personal/feiradetector/res/feira_da_fruta.mp3"
+RMS_THRESHOLD = -25 #-10
+MP3_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'res', 'feira_da_fruta.mp3')
 
 def play():
-    player = gst.parse_launch("playbin2 uri=%s" % MP3_FILE)
+    player = gst.parse_launch("playbin2 uri=file://%s" % MP3_FILE)
     player.set_state(gst.STATE_PLAYING)
     pipeline.set_state(gst.STATE_NULL)
 
