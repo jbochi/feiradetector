@@ -18,45 +18,53 @@ def get_alert_file():
 
 
 class Detector(object):
-    def player_on_eos(self, bus, message):
-        print 'feira acabou de tocar. reiniciando detector.'
-        self.player.set_state(gst.STATE_NULL)
+    def __init__(self):
+        self.pipeline = gst.parse_launch("autoaudiosrc ! level ! fakesink")
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self.detector_callback)
+        self.start_detector()
+
+    def start_detector(self):
         self.pipeline.set_state(gst.STATE_PLAYING)
 
-    def play(self):
-        self.player = gst.parse_launch("playbin2 uri=file://%s" % get_alert_file())
-        self.player_bus = self.player.get_bus()
-        self.player_bus.add_signal_watch()
-        self.player_bus.connect("message::eos", self.player_on_eos)
-        self.player.set_state(gst.STATE_PLAYING)
-
-    def on_feira_detected(self):
-        print 'feira detectada'
+    def stop_detector(self):
         self.pipeline.set_state(gst.STATE_NULL)
-        self.play()
 
-    def callback(self, bus, message):
+    def detector_callback(self, bus, message):
         if message.type == gst.MESSAGE_ELEMENT:
             if message.structure.get_name() == "level":
-                rms = message.structure["rms"][0]
-                if rms > RMS_THRESHOLD:
-                    self.on_feira_detected()
+                self.level_measured(message.structure)
         elif message.type == gst.MESSAGE_ERROR:
             err, debug = message.parse_error()
             print "Error: %s" % err, debug
             loop.quit()
 
-    def start_detector(self):
-        self.pipeline = gst.parse_launch("autoaudiosrc ! level ! fakesink")
-        self.bus = self.pipeline.get_bus()
-        self.bus.add_signal_watch()
-        self.bus.connect("message", self.callback)
-        self.pipeline.set_state(gst.STATE_PLAYING)
+    def level_measured(self, meausure):
+        rms = meausure["rms"][0]
+        if rms > RMS_THRESHOLD:
+            self.feira_detected()
+
+    def feira_detected(self):
+        print 'feira detectada'
+        self.stop_detector()
+        self.play_alert()
+
+    def play_alert(self):
+        self.player = gst.parse_launch("playbin2 uri=file://%s" % get_alert_file())
+        player_bus = self.player.get_bus()
+        player_bus.add_signal_watch()
+        player_bus.connect("message::eos", self.alert_ended)
+        self.player.set_state(gst.STATE_PLAYING)
+
+    def alert_ended(self, bus, message):
+        print 'feira acabou de tocar. reiniciando detector.'
+        self.player.set_state(gst.STATE_NULL)
+        self.start_detector()
 
 
 def main():
     d = Detector()
-    d.start_detector()
 
     gobject.threads_init()
     loop = glib.MainLoop()
