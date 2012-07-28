@@ -1,5 +1,8 @@
 *.py[co]
 
+# GStreamer
+.DS_Store
+
 # Packages
 *.egg
 *.egg-info
