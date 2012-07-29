@@ -1,15 +1,15 @@
+#!/usr/bin/env python
 import sys
 sys.path.insert(0, "/Library/Frameworks/GStreamer.framework/Versions/0.10/x86_64/lib/python2.7/site-packages/gst-0.10")
 sys.path.insert(0, "/Library/Frameworks/GStreamer.framework/Versions/0.10/x86_64/lib/python2.7/site-packages")
 
 import os
+from optparse import OptionParser
 import random
 
 import glib
 import gobject
-import gst
 
-RMS_THRESHOLD = -15
 RESOURCES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'res')
 
 def get_alert_file():
@@ -18,7 +18,8 @@ def get_alert_file():
 
 
 class Detector(object):
-    def __init__(self):
+    def __init__(self, rms_threshold):
+        self.rms_threshold = rms_threshold
         self.pipeline = gst.parse_launch("autoaudiosrc ! level ! fakesink")
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
@@ -42,7 +43,7 @@ class Detector(object):
 
     def level_measured(self, meausure):
         rms = meausure["rms"][0]
-        if rms > RMS_THRESHOLD:
+        if rms > self.rms_threshold:
             self.feira_detected()
 
     def feira_detected(self):
@@ -62,13 +63,24 @@ class Detector(object):
         self.player.set_state(gst.STATE_NULL)
         self.start_detector()
 
+def parse_options():
+    parser = OptionParser()
+    parser.add_option("-r", "--rms", type="int", dest="rms_threshold",
+        default=-15,
+        help="set RMS threshold")
+    return parser.parse_args()
 
-def main():
-    d = Detector()
-
+def start_loop():
     gobject.threads_init()
     loop = glib.MainLoop()
     loop.run()
 
+def main():
+    d = Detector(rms_threshold=options.rms_threshold)
+    start_loop()
+
 if __name__ == '__main__':
+    (options, args) = parse_options()
+    import gst # We don't import gst before this point because
+               # it messes with optparse
     main()
