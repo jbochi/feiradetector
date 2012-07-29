@@ -18,9 +18,10 @@ def get_alert_file():
 
 
 class Detector(object):
-    def __init__(self, rms_threshold):
+    def __init__(self, rms_threshold=-15, interval=1):
         self.rms_threshold = rms_threshold
-        self.pipeline = gst.parse_launch("autoaudiosrc ! level ! fakesink")
+        pipeline_string = "autoaudiosrc ! level interval=%d ! fakesink" % (interval  * 1e9)
+        self.pipeline = gst.parse_launch(pipeline_string)
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.detector_callback)
@@ -43,6 +44,7 @@ class Detector(object):
 
     def level_measured(self, meausure):
         rms = meausure["rms"][0]
+        print 'rms %f' % rms
         if rms > self.rms_threshold:
             self.feira_detected()
 
@@ -67,7 +69,10 @@ def parse_options():
     parser = OptionParser()
     parser.add_option("-r", "--rms", type="int", dest="rms_threshold",
         default=-15,
-        help="set RMS threshold")
+        help="RMS threshold before alert is played")
+    parser.add_option("-i", "--interval", type="float", dest="interval",
+        default=100,
+        help="Interval of time between audio level measures (in seconds)")
     return parser.parse_args()
 
 def start_loop():
@@ -76,7 +81,7 @@ def start_loop():
     loop.run()
 
 def main():
-    d = Detector(rms_threshold=options.rms_threshold)
+    d = Detector(rms_threshold=options.rms_threshold, interval=options.interval)
     start_loop()
 
 if __name__ == '__main__':
