@@ -71,7 +71,7 @@ def parse_options():
         default=-15,
         help="RMS threshold before alert is played")
     parser.add_option("-i", "--interval", type="float", dest="interval",
-        default=100,
+        default=0.1,
         help="Interval of time between audio level measures (in seconds)")
     return parser.parse_args()
 
