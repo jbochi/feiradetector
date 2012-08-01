@@ -10,6 +10,8 @@ Requirements
 
 feiradetector requires Python 2.7, gstreamer and its bindings.
 
+You can download the GStreamer SDK from http://docs.gstreamer.com/display/GstSDK/Installing+the+SDK
+
 Usage
 -----
 
